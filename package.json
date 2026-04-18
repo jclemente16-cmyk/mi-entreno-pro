@@ -1,7 +1,7 @@
 {
   "name": "mi-entreno-pro",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,10 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide-react": "^0.542.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^2.15.4"
+    "lucide-react": "^0.542.0"
   },
   "devDependencies": {
     "vite": "^5.4.10"

@@ -1,229 +1,339 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Download, Dumbbell, PlayCircle, Search, Star, TimerReset, TrendingUp, Heart, BarChart3, Trash2, Plus, Minus } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import {
+  ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, Download, Dumbbell,
+  Minus, PlayCircle, Plus, RotateCcw, Search, Star, TimerReset, Trash2
+} from 'lucide-react';
 
-const STORAGE_KEY = 'mi-entreno-pro-v1';
-const plan = {
+const STORAGE_KEY = 'mi-entreno-pro-flow-v3';
+
+const workoutPlan = {
   'Día 1': [
-    ['Press banca','Pecho','3x6-8',90,'press banca tecnica','Túmbate en el banco, pies firmes, baja la barra al pecho con control y empuja arriba.',['Escápulas retraídas','No rebotes'],['Multipower','Press mancuernas']],
-    ['Remo en polea','Espalda','3x8-10',90,'remo en polea tecnica','Tira del agarre hacia el abdomen con pecho alto y vuelve controlando.',['No balancees el tronco'],['Remo mancuerna','Remo máquina']],
-    ['Press inclinado con mancuernas','Pecho superior','2x8-12',90,'press inclinado mancuernas tecnica','Sube las mancuernas sobre el pecho y baja con control.',['No abras demasiado los codos'],['Press inclinado multipower']],
-    ['Jalón al pecho','Espalda','2x10-12',90,'jalon al pecho tecnica','Baja la barra al pecho llevando codos abajo.',['No uses impulso'],['Dominada asistida']],
-    ['Elevaciones laterales','Hombro','2x12-15',60,'elevaciones laterales tecnica','Sube los brazos lateralmente hasta el hombro y baja lento.',['Sin balanceo'],['Polea unilateral']],
-    ['Tríceps en polea','Tríceps','2x10-15',60,'triceps polea tecnica','Empuja hacia abajo con codos pegados.',['Codos quietos'],['Cuerda','Barra recta']]
+    { name: 'Press banca', muscle: 'Pecho', defaultSets: 3, repGoal: '6-8', rest: 90, videoQuery: 'press banca tecnica' },
+    { name: 'Remo en polea', muscle: 'Espalda', defaultSets: 3, repGoal: '8-10', rest: 90, videoQuery: 'remo en polea tecnica' },
+    { name: 'Press inclinado con mancuernas', muscle: 'Pecho superior', defaultSets: 2, repGoal: '8-12', rest: 90, videoQuery: 'press inclinado mancuernas tecnica' },
+    { name: 'Jalón al pecho', muscle: 'Espalda', defaultSets: 2, repGoal: '10-12', rest: 90, videoQuery: 'jalon al pecho tecnica' },
+    { name: 'Elevaciones laterales', muscle: 'Hombro', defaultSets: 2, repGoal: '12-15', rest: 60, videoQuery: 'elevaciones laterales tecnica' },
+    { name: 'Tríceps en polea', muscle: 'Tríceps', defaultSets: 2, repGoal: '10-15', rest: 60, videoQuery: 'triceps polea tecnica' }
   ],
   'Día 2': [
-    ['Prensa','Pierna','3x8-12',120,'prensa de piernas tecnica','Baja la plataforma con control y empuja sin bloquear fuerte.',['Rodillas alineadas'],['Sentadilla goblet']],
-    ['Sentadilla en multipower','Cuádriceps','2x8-10',120,'sentadilla multipower tecnica','Baja al rango cómodo y sube empujando el suelo.',['Espalda firme'],['Prensa pies bajos']],
-    ['Extensión de cuádriceps','Cuádriceps','2-3x12-15',75,'extension cuadriceps tecnica','Extiende las piernas y baja lento.',['Pausa arriba'],['Step-up']],
-    ['Femoral sentado','Femoral','2x10-15',75,'femoral sentado tecnica','Flexiona las rodillas y vuelve controlando.',['Sin tirones'],['Femoral de pie']],
-    ['Gemelos','Gemelos','3x10-15',60,'gemelos maquina tecnica','Eleva talones, pausa arriba y baja lento.',['Recorrido completo'],['Gemelo unilateral']],
-    ['Abdominales en máquina','Core','2x12-15',60,'abdominales maquina tecnica','Flexiona el tronco llevando costillas hacia pelvis.',['No tires del cuello'],['Crunch polea']]
+    { name: 'Prensa', muscle: 'Pierna', defaultSets: 3, repGoal: '8-12', rest: 120, videoQuery: 'prensa de piernas tecnica' },
+    { name: 'Sentadilla en multipower', muscle: 'Cuádriceps', defaultSets: 2, repGoal: '8-10', rest: 120, videoQuery: 'sentadilla multipower tecnica' },
+    { name: 'Extensión de cuádriceps', muscle: 'Cuádriceps', defaultSets: 3, repGoal: '12-15', rest: 75, videoQuery: 'extension cuadriceps tecnica' },
+    { name: 'Femoral sentado', muscle: 'Femoral', defaultSets: 2, repGoal: '10-15', rest: 75, videoQuery: 'femoral sentado tecnica' },
+    { name: 'Gemelos', muscle: 'Gemelos', defaultSets: 3, repGoal: '10-15', rest: 60, videoQuery: 'gemelos maquina tecnica' },
+    { name: 'Abdominales en máquina', muscle: 'Core', defaultSets: 2, repGoal: '12-15', rest: 60, videoQuery: 'abdominales maquina tecnica' }
   ],
   'Día 3': [
-    ['Jalón al pecho','Espalda','3x8-12',90,'jalon al pecho tecnica','Baja la barra al pecho con control.',['Pecho arriba'],['Dominada asistida']],
-    ['Press militar con mancuernas','Hombro','3x6-10',120,'press militar mancuernas tecnica','Empuja desde hombros hacia arriba y baja con control.',['Aprieta abdomen'],['Press multipower']],
-    ['Remo máquina','Espalda','2x8-12',90,'remo maquina tecnica','Tira hacia el torso juntando escápulas.',['Controla la vuelta'],['Remo polea']],
-    ['Face pull','Deltoide posterior','2x12-15',60,'face pull tecnica','Tira de la cuerda hacia la cara.',['No cargues demasiado'],['Pájaros']],
-    ['Curl bíceps','Bíceps','2x10-15',60,'curl biceps tecnica','Flexiona el codo sin balancearte.',['Codos quietos'],['Curl polea']],
-    ['Tríceps polea','Tríceps','2x10-15',60,'triceps polea tecnica','Empuja hacia abajo manteniendo codos pegados.',['Sin usar el cuerpo'],['Overhead rope']]
+    { name: 'Jalón al pecho', muscle: 'Espalda', defaultSets: 3, repGoal: '8-12', rest: 90, videoQuery: 'jalon al pecho tecnica' },
+    { name: 'Press militar con mancuernas', muscle: 'Hombro', defaultSets: 3, repGoal: '6-10', rest: 120, videoQuery: 'press militar mancuernas tecnica' },
+    { name: 'Remo máquina', muscle: 'Espalda', defaultSets: 2, repGoal: '8-12', rest: 90, videoQuery: 'remo maquina tecnica' },
+    { name: 'Face pull', muscle: 'Deltoide posterior', defaultSets: 2, repGoal: '12-15', rest: 60, videoQuery: 'face pull tecnica' },
+    { name: 'Curl bíceps', muscle: 'Bíceps', defaultSets: 2, repGoal: '10-15', rest: 60, videoQuery: 'curl biceps tecnica' },
+    { name: 'Tríceps polea', muscle: 'Tríceps', defaultSets: 2, repGoal: '10-15', rest: 60, videoQuery: 'triceps polea tecnica' }
   ],
   'Día 4': [
-    ['Hip thrust máquina','Glúteo','3x8-12',120,'hip thrust maquina tecnica','Empuja con talones y eleva la cadera.',['Aprieta glúteos arriba'],['Puente con barra']],
-    ['Peso muerto rumano','Femoral/Glúteo','3x6-10',120,'peso muerto rumano tecnica','Lleva la cadera atrás con espalda neutra y sube apretando glúteos.',['Barra cerca del cuerpo'],['Rumano mancuernas']],
-    ['Femoral de pie','Femoral','2x10-15',75,'femoral de pie tecnica','Lleva el talón al glúteo y baja lento.',['Movimiento controlado'],['Femoral sentado']],
-    ['Zancada búlgara','Pierna','2x8-12 por pierna',90,'zancada bulgara tecnica','Baja con control y sube con la pierna delantera.',['Rodilla alineada'],['Split squat']],
-    ['Lumbares máquina','Lumbar','2x12-15',60,'extension lumbar maquina tecnica','Extiende hasta posición neutra sin pasarte.',['No hiperextiendas'],['Bird-dog']],
-    ['Core / plancha','Core','2 series',45,'plancha abdominal tecnica','Mantén cuerpo alineado apretando abdomen y glúteos.',['Cuello neutro'],['Pallof press']]
+    { name: 'Hip thrust máquina', muscle: 'Glúteo', defaultSets: 3, repGoal: '8-12', rest: 120, videoQuery: 'hip thrust maquina tecnica' },
+    { name: 'Peso muerto rumano', muscle: 'Femoral/Glúteo', defaultSets: 3, repGoal: '6-10', rest: 120, videoQuery: 'peso muerto rumano tecnica' },
+    { name: 'Femoral de pie', muscle: 'Femoral', defaultSets: 2, repGoal: '10-15', rest: 75, videoQuery: 'femoral de pie tecnica' },
+    { name: 'Zancada búlgara', muscle: 'Pierna', defaultSets: 2, repGoal: '8-12', rest: 90, videoQuery: 'zancada bulgara tecnica' },
+    { name: 'Lumbares máquina', muscle: 'Lumbar', defaultSets: 2, repGoal: '12-15', rest: 60, videoQuery: 'extension lumbar maquina tecnica' },
+    { name: 'Core / plancha', muscle: 'Core', defaultSets: 2, repGoal: 'Tiempo', rest: 45, videoQuery: 'plancha abdominal tecnica' }
   ],
   'Día 5': [
-    ['Press inclinado','Pecho','3x8-12',90,'press inclinado tecnica','Empuja desde inclinación moderada y baja con control.',['Escápulas firmes'],['Press inclinado mancuernas']],
-    ['Remo polea','Espalda','3x8-12',90,'remo polea tecnica','Tira al abdomen con pecho arriba.',['Sin balanceo'],['Remo máquina']],
-    ['Elevaciones laterales','Hombro','2x12-20',60,'elevaciones laterales tecnica','Sube lateralmente hasta el hombro.',['Control total'],['Polea unilateral']],
-    ['Pájaros / deltoide posterior','Hombro posterior','2x12-20',60,'pajaros deltoide posterior tecnica','Abre brazos sin encoger trapecios.',['Ligero peso'],['Face pull']],
-    ['Curl martillo','Bíceps','2x10-15',60,'curl martillo tecnica','Flexiona codos con agarre neutro.',['Sin balanceo'],['Curl cuerda']],
-    ['Curl en polea','Bíceps','1-2x10-15',60,'curl polea tecnica','Flexiona codos sin mover hombros.',['Controla el recorrido'],['Curl barra']],
-    ['Tríceps cuerda','Tríceps','2-3x10-15',60,'triceps cuerda tecnica','Empuja la cuerda hacia abajo y separa puntas al final.',['Aprieta abajo'],['Barra recta']]
+    { name: 'Press inclinado', muscle: 'Pecho', defaultSets: 3, repGoal: '8-12', rest: 90, videoQuery: 'press inclinado tecnica' },
+    { name: 'Remo polea', muscle: 'Espalda', defaultSets: 3, repGoal: '8-12', rest: 90, videoQuery: 'remo polea tecnica' },
+    { name: 'Elevaciones laterales', muscle: 'Hombro', defaultSets: 2, repGoal: '12-20', rest: 60, videoQuery: 'elevaciones laterales tecnica' },
+    { name: 'Pájaros / deltoide posterior', muscle: 'Hombro posterior', defaultSets: 2, repGoal: '12-20', rest: 60, videoQuery: 'pajaros deltoide posterior tecnica' },
+    { name: 'Curl martillo', muscle: 'Bíceps', defaultSets: 2, repGoal: '10-15', rest: 60, videoQuery: 'curl martillo tecnica' },
+    { name: 'Curl en polea', muscle: 'Bíceps', defaultSets: 2, repGoal: '10-15', rest: 60, videoQuery: 'curl polea tecnica' },
+    { name: 'Tríceps cuerda', muscle: 'Tríceps', defaultSets: 3, repGoal: '10-15', rest: 60, videoQuery: 'triceps cuerda tecnica' }
   ]
 };
 
-const today = () => new Date().toISOString().slice(0,10);
-const emptyState = () => ({ logsByDate:{}, notesByDate:{}, bodyWeightByDate:{}, favorites:{}, customSubs:{} });
-const num = (v='') => { const m = String(v).replace(',','.').match(/\d+(\.\d+)?/); return m ? Number(m[0]) : 0; };
-const get1RM = (weight,reps) => { const w = num(weight); const m = String(reps||'').match(/\d+/); const r = m ? Number(m[0]) : 0; return w && r ? Math.round(w*(1+r/30)*10)/10 : 0; };
-const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+const todayString = () => new Date().toISOString().slice(0, 10);
+const formatSeconds = (total) => `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+const buildSets = (n) => Array.from({ length: n }, () => ({ weight: '', reps: '', done: false }));
+const createInitialState = () => ({ logsByDate: {}, notesByDate: {}, favorites: {} });
 
-export default function App(){
-  const [state,setState] = useState(emptyState);
-  const [selectedDay,setSelectedDay] = useState('Día 1');
-  const [selectedDate,setSelectedDate] = useState(today());
-  const [search,setSearch] = useState('');
-  const [timer,setTimer] = useState(90);
-  const [running,setRunning] = useState(false);
-
-  useEffect(()=>{ const raw = localStorage.getItem(STORAGE_KEY); if(raw){ try{ setState({...emptyState(), ...JSON.parse(raw)});}catch{} } },[]);
-  useEffect(()=>{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); },[state]);
-  useEffect(()=>{
-    if(!running) return;
-    const id = setInterval(()=>{
-      setTimer(t => {
-        if(t<=1){ setRunning(false); return 0; }
-        return t-1;
-      });
-    },1000);
-    return ()=>clearInterval(id);
-  },[running]);
-
-  const filteredPlan = useMemo(()=>{
-    const q = search.trim().toLowerCase();
-    if(!q) return plan;
-    const out = {};
-    Object.entries(plan).forEach(([day, arr])=>{
-      const rows = arr.filter(([name,muscle]) => name.toLowerCase().includes(q) || muscle.toLowerCase().includes(q));
-      if(rows.length) out[day]=rows;
-    });
-    return out;
-  },[search]);
-
-  const days = Object.keys(filteredPlan);
-  useEffect(()=>{ if(!days.includes(selectedDay) && days.length) setSelectedDay(days[0]); },[days, selectedDay]);
-
-  const entry = (day, name) => state.logsByDate?.[selectedDate]?.[day]?.[name] || { weight:'', reps:'', notes:'' };
-  const prevEntry = (day, name) => {
-    const dates = Object.keys(state.logsByDate).filter(d=>d<selectedDate).sort().reverse();
-    for(const d of dates){ const e = state.logsByDate[d]?.[day]?.[name]; if(e && (e.weight||e.reps||e.notes)) return { date:d, ...e }; }
-    return null;
+function ensureExerciseRecord(state, date, day, exercise) {
+  return state.logsByDate?.[date]?.[day]?.[exercise.name] || {
+    sets: buildSets(exercise.defaultSets),
+    completed: false,
+    rest: exercise.rest,
+    notes: ''
   };
+}
 
-  const setLog = (day,name,key,val) => setState(prev=>({
-    ...prev,
-    logsByDate:{
-      ...prev.logsByDate,
-      [selectedDate]:{
-        ...prev.logsByDate[selectedDate],
-        [day]:{
-          ...(prev.logsByDate[selectedDate]?.[day]||{}),
-          [name]:{
-            ...(prev.logsByDate[selectedDate]?.[day]?.[name]||{weight:'',reps:'',notes:''}),
-            [key]: val
+export default function App() {
+  const [state, setState] = useState(createInitialState);
+  const [selectedDate, setSelectedDate] = useState(todayString());
+  const [selectedDay, setSelectedDay] = useState('Día 1');
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [search, setSearch] = useState('');
+  const [timerSeconds, setTimerSeconds] = useState(90);
+  const [timerRunning, setTimerRunning] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try { setState({ ...createInitialState(), ...JSON.parse(saved) }); } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => {
+      setTimerSeconds((prev) => {
+        if (prev <= 1) {
+          setTimerRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timerRunning]);
+
+  const dayExercises = useMemo(() => {
+    const base = workoutPlan[selectedDay] || [];
+    const term = search.trim().toLowerCase();
+    return term ? base.filter((e) => e.name.toLowerCase().includes(term) || e.muscle.toLowerCase().includes(term)) : base;
+  }, [selectedDay, search]);
+
+  const getExerciseRecord = (day, exercise) => ensureExerciseRecord(state, selectedDate, day, exercise);
+
+  const updateExerciseRecord = (day, exercise, updater) => {
+    setState((prev) => {
+      const current = ensureExerciseRecord(prev, selectedDate, day, exercise);
+      const updated = typeof updater === 'function' ? updater(current) : updater;
+      return {
+        ...prev,
+        logsByDate: {
+          ...prev.logsByDate,
+          [selectedDate]: {
+            ...prev.logsByDate[selectedDate],
+            [day]: {
+              ...(prev.logsByDate[selectedDate]?.[day] || {}),
+              [exercise.name]: updated
+            }
           }
         }
-      }
-    }
-  }));
+      };
+    });
+  };
 
-  const favorites = Object.entries(plan).flatMap(([day, arr]) => arr.map(([name,muscle,series,rest,video,how,tips,subs])=>({day,name,muscle,series,rest,video,how,tips,subs}))).filter(x=>state.favorites[x.name]);
-  const chartData = favorites[0] ? Object.keys(state.logsByDate).sort().map(date=>{
-    const e = state.logsByDate[date]?.[favorites[0].day]?.[favorites[0].name];
-    return e ? { date: date.slice(5), weight: num(e.weight), oneRM: get1RM(e.weight, e.reps) } : null;
-  }).filter(Boolean) : [];
+  const openExercise = (exercise) => {
+    const record = getExerciseRecord(selectedDay, exercise);
+    setActiveExercise(exercise);
+    setTimerRunning(false);
+    setTimerSeconds(record.rest || exercise.rest || 90);
+  };
 
-  const completedCount = Object.values(state.logsByDate?.[selectedDate]?.[selectedDay] || {}).filter(v=>v.weight||v.reps||v.notes).length;
+  const finishExercise = () => {
+    if (!activeExercise) return;
+    updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, completed: true }));
+    setActiveExercise(null);
+    setTimerRunning(false);
+  };
 
-  return <div className="app">
-    <div className="header">
-      <div>
-        <div className="titleWrap"><Dumbbell size={26}/><h1>Mi Entreno Pro</h1></div>
-        <div className="subtitle">App lista para registrar entrenos, progreso, descansos y vídeos de técnica.</div>
-      </div>
-      <div className="topControls">
-        <input className="input" type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} style={{width:170}}/>
-        <button className="btn" onClick={()=>{
-          const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-          const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mi-entreno-pro-datos.json'; a.click(); URL.revokeObjectURL(url);
-        }}><Download size={16} style={{verticalAlign:'middle', marginRight:6}}/>Exportar</button>
-        <button className="btn danger" onClick={()=>{ const s = emptyState(); setState(s); localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }}><Trash2 size={16} style={{verticalAlign:'middle', marginRight:6}}/>Borrar</button>
-      </div>
-    </div>
+  const toggleFavorite = (name) => setState((prev) => ({ ...prev, favorites: { ...prev.favorites, [name]: !prev.favorites[name] } }));
+  const dayNotes = state.notesByDate?.[selectedDate]?.[selectedDay] || '';
+  const updateDayNotes = (value) => setState((prev) => ({ ...prev, notesByDate: { ...prev.notesByDate, [selectedDate]: { ...prev.notesByDate[selectedDate], [selectedDay]: value } } }));
+  const completedCount = (workoutPlan[selectedDay] || []).filter((exercise) => getExerciseRecord(selectedDay, exercise).completed).length;
 
-    <div className="layout">
-      <div className="sidebar">
-        <div className="card"><div className="cardHead"><h2><Search size={18} style={{verticalAlign:'middle', marginRight:6}}/>Buscar ejercicio</h2></div><div className="cardBody">
-          <input className="input" placeholder="Ej: press, femoral, bíceps..." value={search} onChange={e=>setSearch(e.target.value)}/>
-          <div className="dayList" style={{marginTop:12}}>{Object.keys(plan).map(day=><button key={day} className={`btn dayBtn ${selectedDay===day?'active':''}`} onClick={()=>setSelectedDay(day)}><CalendarDays size={16} style={{verticalAlign:'middle', marginRight:6}}/>{day}</button>)}</div>
-          <div className="infoBox" style={{marginTop:12}}>
-            <div><strong>Fecha:</strong> {selectedDate}</div>
-            <div><strong>Día actual:</strong> {selectedDay}</div>
-            <div><strong>Ejercicios con datos:</strong> {completedCount}</div>
-          </div>
-        </div></div>
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mi-entreno-pro-datos.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
-        <div className="card"><div className="cardHead"><h2><TimerReset size={18} style={{verticalAlign:'middle', marginRight:6}}/>Cronómetro de descanso</h2></div><div className="cardBody">
-          <div className="timerValue">{fmt(timer)}</div>
-          <div className="btnRow" style={{justifyContent:'center', marginTop:8}}>
-            <button className="btn" onClick={()=>setTimer(t=>Math.max(0,t-15))}><Minus size={16}/></button>
-            <button className="btn" onClick={()=>setTimer(t=>t+15)}><Plus size={16}/></button>
-          </div>
-          <div className="btnRow" style={{marginTop:10}}>
-            <button className="btn primary" onClick={()=>setRunning(v=>!v)}>{running ? 'Pausar' : 'Iniciar'}</button>
-            <button className="btn" onClick={()=>{setRunning(false); setTimer(90);}}>Reset 90 s</button>
-          </div>
-        </div></div>
+  const resetAll = () => {
+    const clean = createInitialState();
+    setState(clean);
+    setActiveExercise(null);
+    setTimerRunning(false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+  };
 
-        <div className="card"><div className="cardHead"><h2><Heart size={18} style={{verticalAlign:'middle', marginRight:6}}/>Peso corporal del día</h2></div><div className="cardBody">
-          <input className="input" placeholder="Ej: 82.4 kg" value={state.bodyWeightByDate[selectedDate] || ''} onChange={e=>setState(prev=>({...prev, bodyWeightByDate:{...prev.bodyWeightByDate, [selectedDate]: e.target.value}}))}/>
-        </div></div>
-
-        <div className="card"><div className="cardHead"><h2><TrendingUp size={18} style={{verticalAlign:'middle', marginRight:6}}/>Progreso rápido</h2></div><div className="cardBody">
-          {!favorites.length ? <div className="muted">Marca ejercicios como favoritos para ver aquí su progreso.</div> : favorites.slice(0,6).map(f=>{
-            const cur = entry(f.day,f.name); const prev = prevEntry(f.day,f.name); const diff = num(cur.weight)-num(prev?.weight||0);
-            return <div key={f.name} className="metric" style={{marginBottom:8}}>
-              <div style={{fontWeight:700}}>{f.name}</div>
-              <div className="muted">Actual: {cur.weight || '-'} | Anterior: {prev?.weight || '-'}</div>
-              <div className={diff>0?'progressGood':diff<0?'progressWarn':'progressFlat'}>{diff>0?`+${diff} kg`:diff<0?`${diff} kg`:'Sin cambio'}</div>
+  if (activeExercise) {
+    const record = getExerciseRecord(selectedDay, activeExercise);
+    return (
+      <div className="app-shell"><div className="container" style={{maxWidth: 760}}>
+        <div className="hero">
+          <div className="screen-header">
+            <button className="btn ghost" style={{width:'auto'}} onClick={() => { setActiveExercise(null); setTimerRunning(false); }}><ArrowLeft size={16} /> Volver</button>
+            <div className="right">
+              <div className="small" style={{color:'#9ca3af'}}>{selectedDay} · {selectedDate}</div>
+              <div className="hero-title" style={{fontSize: 26}}>{activeExercise.name}</div>
             </div>
-          })}
-        </div></div>
-      </div>
+          </div>
+          <div className="top-tools">
+            <span className="badge dark">{activeExercise.muscle}</span>
+            <span className="badge">Objetivo {activeExercise.repGoal}</span>
+          </div>
+        </div>
 
-      <div className="main">
-        {favorites[0] && <div className="card"><div className="cardHead"><h2><BarChart3 size={18} style={{verticalAlign:'middle', marginRight:6}}/>Gráfico de progreso: {favorites[0].name}</h2></div><div className="cardBody"><div className="chartBox"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="date"/><YAxis/><Tooltip/><Line type="monotone" dataKey="weight" strokeWidth={2} dot/><Line type="monotone" dataKey="oneRM" strokeWidth={2} dot/></LineChart></ResponsiveContainer></div></div></div>}
+        <div className="card">
+          <div className="exercise-top">
+            <div className="timer-box">
+              <div className="small">Temporizador</div>
+              <div className="timer-number">{formatSeconds(timerSeconds)}</div>
+            </div>
+            <div>
+              <div className="actions" style={{justifyContent:'flex-end', marginBottom:8}}>
+                <button className="btn icon-btn" onClick={() => setTimerSeconds((s) => Math.max(0, s - 15))}><Minus size={16} /></button>
+                <button className="btn icon-btn" onClick={() => setTimerSeconds((s) => s + 15)}><Plus size={16} /></button>
+              </div>
+              <div className="actions">
+                <button className="btn primary" style={{width:'auto'}} onClick={() => setTimerRunning((v) => !v)}><Clock3 size={16} /> {timerRunning ? 'Pausar' : 'Iniciar'}</button>
+                <button className="btn secondary" style={{width:'auto'}} onClick={() => { setTimerRunning(false); setTimerSeconds(record.rest || activeExercise.rest); }}><RotateCcw size={16} /> Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div className="tabs">{days.map(day=><button key={day} className={`btn tab ${selectedDay===day?'active':''}`} onClick={()=>setSelectedDay(day)}>{day}</button>)}</div>
-
-        {(filteredPlan[selectedDay] || []).map(([name,muscle,series,rest,video,how,tips,subs])=>{
-          const cur = entry(selectedDay,name); const prev = prevEntry(selectedDay,name); const diff = num(cur.weight)-num(prev?.weight||0); const oneRM = get1RM(cur.weight, cur.reps); const fav = !!state.favorites[name];
-          return <div className="card exercise" key={name}>
-            <div className="exerciseTop">
-              <div style={{flex:1}}>
-                <div className="exerciseTitle">
-                  <h3>{name}</h3>
-                  <span className="badge fill">{muscle}</span>
-                  <span className="badge">{series}</span>
-                  <span className="badge">Descanso {rest}s</span>
-                  <button className={`btn small ${fav ? 'primary':''}`} onClick={()=>setState(prev=>({...prev, favorites:{...prev.favorites, [name]: !prev.favorites[name]}}))}><Star size={14} style={{verticalAlign:'middle', marginRight:6}}/>{fav ? 'Favorito' : 'Marcar'}</button>
-                  <button className="btn small" onClick={()=>{setTimer(rest); setRunning(false);}}>Usar descanso</button>
+        <div className="card">
+          <div className="exercise-top">
+            <div>
+              <div className="exercise-name">Series</div>
+              <div className="small">Añade o quita series. El registro se queda guardado al volver a entrar.</div>
+            </div>
+            <div className="actions">
+              <button className="btn secondary" style={{width:'auto'}} onClick={() => updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, sets: current.sets.length > 1 ? current.sets.slice(0, -1) : current.sets }))}><Minus size={16} /> Quitar</button>
+              <button className="btn secondary" style={{width:'auto'}} onClick={() => updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, sets: [...current.sets, { weight: '', reps: '', done: false }] }))}><Plus size={16} /> Añadir</button>
+            </div>
+          </div>
+          <div className="sets">
+            {record.sets.map((setItem, idx) => (
+              <div className="set-card" key={idx}>
+                <div className="set-row">
+                  <div className="exercise-name" style={{fontSize: 18}}>Serie {idx + 1}</div>
+                  <button
+                    className={`btn ${setItem.done ? 'success' : 'secondary'}`}
+                    style={{width:'auto'}}
+                    onClick={() => updateExerciseRecord(selectedDay, activeExercise, (current) => ({
+                      ...current,
+                      sets: current.sets.map((s, i) => i === idx ? { ...s, done: !s.done } : s)
+                    }))}
+                  >
+                    <CheckCircle2 size={16} /> {setItem.done ? 'Hecha' : 'Marcar'}
+                  </button>
                 </div>
-                <p className="muted" style={{margin:'10px 0 0'}}>{how}</p>
-                <details className="details"><summary className="summary">Ver consejos y sustituciones</summary>
-                  <div style={{marginTop:10}}>
-                    <div style={{fontWeight:700, marginBottom:4}}>Consejos</div>
-                    <ul>{tips.map(t=><li key={t} className="muted">{t}</li>)}</ul>
-                    <div style={{fontWeight:700, marginTop:10, marginBottom:4}}>Sustituciones</div>
-                    <div className="btnRow">{subs.map(s=><span key={s} className="badge">{s}</span>)}</div>
-                    <div style={{fontWeight:700, marginTop:10, marginBottom:4}}>Mi sustitución favorita</div>
-                    <input className="input" placeholder="Ej: press mancuernas" value={state.customSubs[name] || ''} onChange={e=>setState(prev=>({...prev, customSubs:{...prev.customSubs, [name]: e.target.value}}))}/>
+                <div className="fields">
+                  <div>
+                    <div className="small">Peso</div>
+                    <input className="input" value={setItem.weight} placeholder="60" onChange={(e) => updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, sets: current.sets.map((s, i) => i === idx ? { ...s, weight: e.target.value } : s) }))} />
                   </div>
-                </details>
-                <details className="details"><summary className="summary">Ver vídeo</summary><div className="videoWrap"><iframe src={`https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(video)}`} title={name} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen/></div></details>
+                  <div>
+                    <div className="small">Reps</div>
+                    <input className="input" value={setItem.reps} placeholder={activeExercise.repGoal} onChange={(e) => updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, sets: current.sets.map((s, i) => i === idx ? { ...s, reps: e.target.value } : s) }))} />
+                  </div>
+                </div>
               </div>
-              <div style={{minWidth:220}}>
-                <div className="metric"><div><strong>Último registro:</strong> {prev?.date || '-'}</div><div><strong>Peso anterior:</strong> {prev?.weight || '-'}</div><div><strong>1RM estimado:</strong> {oneRM || '-'}</div><div className={cur.weight && prev ? (diff>0?'progressGood':diff<0?'progressWarn':'progressFlat') : 'progressFlat'}>{cur.weight && prev ? (diff>0?`Subida: +${diff} kg`:diff<0?`Bajada: ${diff} kg`:'Mismo peso') : 'Sin comparación'}</div></div>
-              </div>
-            </div>
-            <div className="grid3">
-              <div><div style={{fontWeight:600, marginBottom:6}}>Peso usado</div><input className="input" placeholder="Ej: 60 kg" value={cur.weight} onChange={e=>setLog(selectedDay,name,'weight',e.target.value)}/></div>
-              <div><div style={{fontWeight:600, marginBottom:6}}>Reps hechas</div><input className="input" placeholder="Ej: 8,8,7" value={cur.reps} onChange={e=>setLog(selectedDay,name,'reps',e.target.value)}/></div>
-              <div><div style={{fontWeight:600, marginBottom:6}}>Notas</div><input className="input" placeholder="Sensaciones, dolor, mejora..." value={cur.notes} onChange={e=>setLog(selectedDay,name,'notes',e.target.value)}/></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="exercise-name" style={{marginBottom: 10}}>Notas del ejercicio</div>
+          <textarea className="textarea" value={record.notes} placeholder="Técnica, sensaciones, molestias..." onChange={(e) => updateExerciseRecord(selectedDay, activeExercise, (current) => ({ ...current, notes: e.target.value }))} />
+          <div className="footer-grid" style={{marginTop: 12}}>
+            <button className="btn secondary" onClick={() => { window.location.href = `https://m.youtube.com/results?search_query=${encodeURIComponent(activeExercise.videoQuery)}`; }}><PlayCircle size={16} /> Ver vídeo</button>
+            <button className="btn secondary" onClick={() => toggleFavorite(activeExercise.name)}><Star size={16} /> {state.favorites[activeExercise.name] ? 'Favorito' : 'Marcar favorito'}</button>
+            <button className="btn primary" onClick={finishExercise}><CheckCircle2 size={16} /> Terminar ejercicio</button>
+          </div>
+        </div>
+      </div></div>
+    );
+  }
+
+  return (
+    <div className="app-shell"><div className="container">
+      <div className="hero">
+        <div className="hero-top">
+          <div>
+            <div style={{display:'flex', alignItems:'center', gap:8}}><Dumbbell size={20} color="#a3e635" /><h1 className="hero-title">Mi Entreno Pro</h1></div>
+            <div className="hero-sub">Elige el día, entra en el ejercicio y registra cada serie.</div>
+          </div>
+          <div className="header-actions">
+            <input className="input" style={{width:170, background:'#111827', color:'white', borderColor:'#374151'}} type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+            <button className="btn secondary" style={{width:'auto'}} onClick={exportData}><Download size={16} /> Exportar</button>
+            <button className="btn ghost" style={{width:'auto'}} onClick={resetAll}><Trash2 size={16} /> Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="sidebar-layout">
+        <div style={{display:'grid', gap:16}}>
+          <div className="card">
+            <div className="small" style={{marginBottom:10, fontWeight:600, color:'#111827'}}><Search size={14} style={{verticalAlign:'middle', marginRight:6}} /> Buscar</div>
+            <input className="input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="press, espalda, bíceps..." />
+          </div>
+          <div className="card">
+            <div style={{display:'grid', gap:8}}>
+              {Object.keys(workoutPlan).map((day) => (
+                <button key={day} className={`day-button ${selectedDay === day ? 'active' : ''}`} onClick={() => setSelectedDay(day)}><CalendarDays size={16} style={{verticalAlign:'middle', marginRight:8}} /> {day}</button>
+              ))}
             </div>
           </div>
-        })}
+          <div className="card">
+            <div className="small">Progreso del día</div>
+            <div className="metric">{completedCount}/{(workoutPlan[selectedDay] || []).length}</div>
+            <div className="small">ejercicios terminados</div>
+          </div>
+        </div>
 
-        <div className="card"><div className="cardHead"><h2><Dumbbell size={18} style={{verticalAlign:'middle', marginRight:6}}/>Notas generales del día</h2></div><div className="cardBody">
-          <textarea className="textarea" placeholder="Ejemplo: hoy me he visto fuerte en prensa, subir 10 kg la próxima semana..." value={state.notesByDate[selectedDate] || ''} onChange={e=>setState(prev=>({...prev, notesByDate:{...prev.notesByDate, [selectedDate]: e.target.value}}))}/>
-          <div className="footerNote">Todo se guarda automáticamente en este dispositivo.</div>
-        </div></div>
+        <div style={{display:'grid', gap:16}}>
+          <div className="card">
+            <div className="exercise-top">
+              <div>
+                <div className="hero-title" style={{fontSize: 26, color:'#111827'}}>{selectedDay}</div>
+                <div className="small">Pulsa un ejercicio para entrar en su pantalla.</div>
+              </div>
+              <span className="badge dark">{selectedDate}</span>
+            </div>
+            <div className="exercise-list" style={{marginTop:16}}>
+              {dayExercises.map((exercise) => {
+                const record = getExerciseRecord(selectedDay, exercise);
+                const doneSets = record.sets.filter((s) => s.done).length;
+                return (
+                  <button className="exercise-item" key={exercise.name} onClick={() => openExercise(exercise)}>
+                    <div className="exercise-top">
+                      <div style={{flex:1, minWidth:0}}>
+                        <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                          <div className="exercise-name">{exercise.name}</div>
+                          <span className="badge">{exercise.muscle}</span>
+                          {state.favorites[exercise.name] ? <Star size={14} className="star" fill="currentColor" /> : null}
+                        </div>
+                        <div className="chips" style={{marginTop:10}}>
+                          <span className="chip">{record.sets.length} series</span>
+                          <span className="chip">objetivo {exercise.repGoal}</span>
+                          <span className="chip">descanso {record.rest || exercise.rest}s</span>
+                          <span className={`chip ${record.completed ? 'done' : ''}`}>{record.completed ? 'hecho' : `${doneSets} series hechas`}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={20} color="#9ca3af" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="exercise-name" style={{fontSize:22, marginBottom:10}}>Notas del día</div>
+            <textarea className="textarea" value={dayNotes} onChange={(e) => updateDayNotes(e.target.value)} placeholder="Cómo te has visto hoy, qué subirías, molestias, sensaciones..." />
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </div></div>
+  );
 }
